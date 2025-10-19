@@ -5,52 +5,65 @@
 
 B main
 
+//--------------------------------------------------
+// MAIN
+//--------------------------------------------------
 main:
-    SUBI SP, SP, #192        // reserve space for saves + array (aligned)
+    SUBI SP, SP, #192            // reserve stack frame
+    STUR X30, [SP, #0]
+    STUR X19, [SP, #8]
+    STUR X20, [SP, #16]
 
-    STUR X30, [SP, #0]       // save return addr if any
-    STUR X19, [SP, #8]       // save old X19
-    STUR X20, [SP, #16]      // save old X20
+    // Set array base & size
+    ADD X19, SP, XZR             // X19 = SP
+    ADDI X19, X19, #32           // X19 = &array_region
+    ADDI X20, XZR, #10           // X20 = size = 10
 
-    // Set array base inside our frame 
-    ADD X19, SP, XZR         // X19 = SP
-    ADDI X19, X19, #32       // X19 = &array_region
-    ADDI X20, XZR, #10       // X20 = size = 15
-
-    // prepare args and call fill
-    ADD X0, X19, XZR         // X0 = array base
-    ADD X1, X20, XZR         // X1 = n
+    //----------------------------------------
+    // Fill array (descending values)
+    //----------------------------------------
+    ADD X0, X19, XZR             // X0 = array base
+    ADD X1, X20, XZR             // X1 = n
     BL fill
 
-    // prepare to call print_loop: initialize index register X21
-    ADD X21, XZR, XZR    // X21 = 0          
-
-    //ADD X0, X19, XZR         // X0 = array base 
-    //ADD X1, X20, XZR         // X1 = n
-    //ADD X21, XZR, XZR
-   // BL print_loop
-
-   // ADD X0, X19, XZR     // base address of array
-   // ADDI X1, XZR, #3     // n = 3
-   // ADDI X2, XZR, #7     // m = 7
-  //  BL max_index         // call
-   // PRNT X0
-
-    ADD X0, X19, XZR     // base address of array
-    ADDI X1, XZR, #0    // i =0
-    ADDI X2, XZR, #1    // j = 1
-    BL swap         // call
-
-
-    ADD X21, XZR, XZR    // X21 = 0
-    ADD X0, X19, XZR    
-    ADD X1, X20,XZR
+    //----------------------------------------
+    // Print array before swap
+    //----------------------------------------
+    ADD X0, X19, XZR             // X0 = array base
+    ADD X1, X20, XZR             // X1 = n
+    ADDI X2, XZR, #0             // X2 = i = 0
     BL print_loop
 
+    //----------------------------------------
+    // Swap a[0] and a[1]
+    //----------------------------------------
+   // ADDI X0, X19, #0             // array base
+   // ADDI X1, XZR, #0             // i = 0
+   // ADDI X2, XZR, #1             // j = 1
+   // BL swap
+
+    //Print array again
+    //----------------------------------------
+   // ADD X0, X19, XZR
+   // ADD X1, X20, XZR
+   // ADDI X2, XZR, #0
+   // BL print_loop
 
 
 
-    // restore saved registers and deallocate main frame BEFORE HALT
+    ADD X0, X19, XZR
+    ADD X1, X20, XZR
+   
+    BL is_sorted
+    PRNT X0
+
+
+
+
+
+    //----------------------------------------
+    // Restore and HALT
+    //----------------------------------------
     LDUR X30, [SP, #0]
     LDUR X19, [SP, #8]
     LDUR X20, [SP, #16]
@@ -58,61 +71,120 @@ main:
     HALT
 
 
-
-
-
-// expects:
-// X19 = base address 
-// X20 = size
-// X21 = index (initialized to 0 before BL)
-
+//--------------------------------------------------
+// PRINT_LOOP
+// Expects: X0 = base, X1 = n, X2 = i (start index)
+//--------------------------------------------------
 print_loop:
     SUBI SP, SP, #32
     STUR X30, [SP, #0]
-    STUR X2,  [SP, #8]     // save temp reg X2 if needed
-    STUR X3,  [SP, #16]
+    STUR X3,  [SP, #8]
+    STUR X4,  [SP, #16]
 
 pl_loop:
-    SUBS XZR, X2, X1       // set flags for i - n
+    SUBS XZR, X2, X1          // while (i < n)
     B.GE pl_done
 
-    LSL X3, X2, #3         // offset = i * 8
-    ADD X3, X0, X3         // address = base + offset
-    LDUR X4, [X3, #0]      // load a[i]
+    LSL X3, X2, #3            // offset = i * 8
+    ADD X3, X0, X3            // address = base + offset
+    LDUR X4, [X3, #0]         // load a[i]
     PRNT X4
 
-    ADDI X2, X2, #1        // i++
+    ADDI X2, X2, #1           // i++
     B pl_loop
 
 pl_done:
     LDUR X30, [SP, #0]
-    LDUR X2,  [SP, #8]
-    LDUR X3,  [SP, #16]
+    LDUR X3,  [SP, #8]
+    LDUR X4,  [SP, #16]
     ADDI SP, SP, #32
     BR LR
 
 
 
-//expects
-//X0 = address of a
-//X1 = i
-//X2 = j
+
+
+//--------------------------------------------------
+// IS_SORTED
+// Expects: X0 = base Adress , X1 = n
+//---
+is_sorted:
+    SUBI SP, SP, #32
+    STUR X30, [SP, #0]
+    STUR X3,  [SP, #8]
+    STUR X4,  [SP, #16]
+
+   
+    ADDI X21 , XZR , #0 // temp =0
+
+    ADDI X2, XZR, #1          // i = 1
+
+
+sorted_loop:
+    SUBS XZR, X2, X1          // while (i < n)
+    B.GE done
+
+
+
+    LSL X3, X2, #3            // offset = i * 8
+    ADD X3, X0, X3            // address = base + offset
+    LDUR X4, [X3, #0]         // load a[i]
+
+
+    SUBI X5, X2, #1      // X3 = i - 1
+    LSL  X5, X5, #3      // X3 = (i - 1) * 8   (shift left by 3 bits)
+    ADD  X5, X0, X5      // X3 = address of A[i - 1]
+    LDUR X6, [X5, #0]    // X2 = A[i - 1]
+
+    SUBS XZR, X4, X6
+    B.LE not_sorted
+
+    ADDI X2, X2, #1           // i++
+    B sorted_loop
+
+
+not_sorted:
+    ADDI X0, XZR, #1          // return 1 (not sorted)
+    B exit
+
+done:
+    ADDI X0, XZR, #0 
+
+exit:
+    LDUR X30, [SP, #0]
+    LDUR X3,  [SP, #8]
+    LDUR X4,  [SP, #16]
+    LDUR X5,  [SP, #24]
+    ADDI SP, SP, #32
+    BR LR
+
+
+
+
+
+
+
+
+//--------------------------------------------------
+// SWAP
+// Expects: X0 = base, X1 = i, X2 = j
+//--------------------------------------------------
 swap:
-    SUBI SP, SP, #32        // make stack space
-    STUR X30, [SP, #0]      // save return address
-    STUR X9,  [SP, #8]      // save temp registers
+    SUBI SP, SP, #32
+    STUR X30, [SP, #0]
+    STUR X9,  [SP, #8]
     STUR X10, [SP, #16]
 
-    LSL X9, X1,#3 // temp = i*8
-    ADD X9, X0, X9 // Add adress to temp X9 = a[i]
-    LDUR X10 ,[X9, #0] // X10 = temp 
+    LSL X9, X1, #3             // &a[i]
+    ADD X9, X0, X9
+    LDUR X10, [X9, #0]         // X10 = a[i]
 
-    LSL X11, X2,#3 // temp = j*8
-    ADD X11, X0, X11 // Add adress to temp
-    LDUR X12,[ X11, #0] // X12 = a[j]
-    
-    STUR X12,[X9,#0] //a[i] = a[j]
-    STUR X10, [X11, #0] //a[j] = temp
+    LSL X11, X2, #3            // &a[j]
+    ADD X11, X0, X11
+    LDUR X12, [X11, #0]        // X12 = a[j]
+
+    STUR X12, [X9, #0]         // a[i] = a[j]
+    STUR X10, [X11, #0]        // a[j] = old a[i]
 
     LDUR X30, [SP, #0]
     LDUR X9,  [SP, #8]
@@ -121,44 +193,51 @@ swap:
     BR LR
 
 
-
-
-
-
-
-//fill: unchanged logic, expects X0=array, X1=n
-
+//--------------------------------------------------
+// FILL
+// Expects: X0 = base, X1 = n
+// Fills array in descending order
+//--------------------------------------------------
 fill:
-    // Save registers
     SUBI SP, SP, #64
     STUR X30, [SP, #0]
     STUR X19, [SP, #8]
     STUR X20, [SP, #16]
     STUR X21, [SP, #24]
     STUR X22, [SP, #32]
-    STUR X23, [SP, #40] 
+    STUR X23, [SP, #40]
 
-    ADD X19, X0, XZR      // X19 = base address of array a
-    ADD X20, X1, XZR      // X20 = n
-    SUBI X21, X20, #1     // X21 = i = n - 1
+    ADD X19, X0, XZR           // base
+    ADD X20, X1, XZR           // n
+    //SUBI X21, XZR, #0  
+    SUBI X21, X20, #1          // i = n - 1
 
 fill_loop:
+    //SUBS XZR, X21, X20
+   //B.GE fill_done             // while (i < n)
+
+   // LSL X23, X21, #3           // offset = i * 8
+   // ADD X23, X19, X23          // address = base + offset
+   // STUR X21, [X23, #0]        // a[i] = i
+
+    //ADDI X21, X21, #1          // i++
+   // B fill_loop
+
+
     SUBS XZR, X21, XZR
-    B.LT fill_done     // while (i >= 0)
-   
+    B.LT fill_done             // while (i >= 0)
 
-    SUB X22, X20, X21     // X22 = n - i
-    SUBI X22, X22, #1     // X22 = n - i - 1  (index)
-    LSL X23, X22, #3      // multiply by 8 (64-bit integers)
-    ADD X23, X19, X23     // X23 = &a[n - i - 1]
+   SUB X22, X20, X21          // X22 = n - i
+   SUBI X22, X22, #1          // X22 = n - i - 1
+   LSL X23, X22, #3           // offset
+    ADD X23, X19, X23          // &a[n - i - 1]
 
-    STUR X21, [X23, #0]   // a[n - i - 1] = i
+   STUR X21, [X23, #0]        // a[n - i - 1] = i
 
-    SUBI X21, X21, #1     // i--
-    B fill_loop
+   SUBI X21, X21, #1
+   B fill_loop
 
 fill_done:
-    // Restore registers
     LDUR X30, [SP, #0]
     LDUR X19, [SP, #8]
     LDUR X20, [SP, #16]
@@ -169,37 +248,34 @@ fill_done:
     BR LR
 
 
+//--------------------------------------------------
+// MAX_INDEX
+// Expects: X0 = base, X1 = i, X2 = j
+// Returns: X0 = index of larger element
+//--------------------------------------------------
 max_index:
     SUBI SP, SP, #32
     STUR X30, [SP, #0]
     STUR X9,  [SP, #8]
     STUR X10, [SP, #16]
 
-    / Load a[n] into X9
     LSL X9, X1, #3
     ADD X9, X0, X9
     LDUR X9, [X9, #0]
 
-    / Load a[m] into X10
     LSL X10, X2, #3
     ADD X10, X0, X10
     LDUR X10, [X10, #0]
 
-    / Compare a[n] and a[m]
     SUBS XZR, X9, X10
-
-B.LT returnM          / if a[n] < a[m], return a[m]
-
-/ Otherwise, return a[n]
-ADD X0, X1 ,XZR
-B max_done
+    B.LT returnM
+    ADD X0, X1, XZR
+    B max_done
 
 returnM:
-    ADD X0, X2,XZR
-
+    ADD X0, X2, XZR
 
 max_done:
-    // Epilogue - restore registers
     LDUR X30, [SP, #0]
     LDUR X9,  [SP, #8]
     LDUR X10, [SP, #16]

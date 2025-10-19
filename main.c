@@ -103,7 +103,7 @@ int is_sorted(int *a, int size)
 
   return i == size;
 }
-
+ 
 /* Your main function should allocate space for an array, call fill to   *
  * fill it with decreasing numbers, and then call stoopid_sort to sort   *
  * it.  Use the HALT emulator instruction to see the memory contents and *
