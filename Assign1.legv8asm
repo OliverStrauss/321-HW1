@@ -14,7 +14,7 @@ main:
     STUR X19, [SP, #8]
     STUR X20, [SP, #16]
 
-    // Set array base & size
+    // Set array base and size
     ADDI X19, SP, #32            // X19 = &array_region (array base)
     ADDI X20, XZR, #10           // X20 = size = 10
 
@@ -27,7 +27,7 @@ main:
 
 
     //----------------------------------------
-    // Print array before swap
+    // Print array before sort
     //----------------------------------------
     ADD X0, X19, XZR             // X0 = array base
     ADD X1, X20, XZR             // X1 = n
@@ -40,15 +40,25 @@ main:
     BL find_largest
     PRNT X0
 
+    // stoopid_sort
+    ADD X0, X19, XZR // a
+    ADD X1, X20, XZR // size
+    BL stoopid_sort
+
+    // print array after sort
+    ADD X0, X19, XZR // base
+    ADD X1, X20, XZR  // a
+    ADDI X2, XZR, #0 // i = 0
+
 
 
     //----------------------------------------
     // Swap for test 
     //----------------------------------------
-    ADD X0, X19, XZR             // X0 = array base
-    ADDI X1, XZR, #0             // X1 = n
-    ADDI X2, XZR, #5             // X2 = i = 0
-    BL swap
+    // ADD X0, X19, XZR             // X0 = array base
+    // ADDI X1, XZR, #0             // X1 = n
+    // ADDI X2, XZR, #5             // X2 = i = 0
+    // BL swap
 
       //----------------------------------------
     // Print array before swap
@@ -64,17 +74,17 @@ main:
 
 
 
-    ADD X0, X19, XZR
-    ADD X1, X20, XZR
+   // ADD X0, X19, XZR
+   // ADD X1, X20, XZR
     //BL is_sorted
   //  PRNT X0                      // prints 0 if sorted, 1 if not
 
     
-    ADD X0, X19, XZR             // base
-    ADDI X1, XZR, #0             // start = 0
-    ADD X2, X20, XZR             // size = n
-    BL find_largest
-    PRNT X0
+   // ADD X0, X19, XZR             // base
+   // ADDI X1, XZR, #0             // start = 0
+   // ADD X2, X20, XZR             // size = n
+   // BL find_largest
+   // PRNT X0
 
     //----------------------------------------
     // Restore and HALT
@@ -349,3 +359,59 @@ fl_done:
     LDUR X23, [SP, #40]
     ADDI SP, SP, #64
     BR LR
+
+
+//--------------------------------------------------
+// STOOPID_SORT
+// Expects: X0 = base (a), X1 = size
+//--------------------------------------------------
+stoopid_sort:
+    SUBI SP, SP, #64
+    STUR X30, [SP, #0]
+    STUR X19, [SP, #8]
+    STUR X20, [SP #16]
+    STUR X21, [SP, #24]
+    STUR X22, [SP, #32]
+    STUR X23, [SP, #40]
+
+    ADD X19, X0, XZR // X19 = base a
+    ADD X20, X1, XZR // X20 = size
+    ADDI X21, XZR, #0 // X21 = i = 0
+
+ss_loop:
+    // while (i < size - 1)
+    SUB1 X23, X20, #1
+    SUBS XZR, X21, X23 // X23 = size - 1
+    B.GE ss_done
+
+    // n = find_largest(a, 0, size - 1)
+    SUB X23, X20, X21 // X23 = size - 1
+    ADD X0, X19, XZR // arg0 = a
+    ADDI X1, XZR, #0 // arg1 = 0
+    ADD X2, X23, XZR // arg2 = size - 1
+    BL find_largest
+    ADD X22, X0, XZR // X22 = n (return value)
+
+    // swap(a, n, size - i - 1)
+    SUB X23, X20, X21 // X23 = size - i
+    SUBI X23, X23, #1 // X23 = size - i - 1
+    ADD X0, X19, XZR // arg0 = a
+    ADD X1, X22, XZR // arg1 = n
+    ADD X2, X23, XZR // arg2 = size - i - 1 
+    BL swap 
+
+    // i++
+    ADD X21, X21, #1
+    BL ss_loop
+
+ss_done:
+LDUR X30, [SP, #0]
+    LDUR X19, [SP, #8]
+    LDUR X20, [SP, #16]
+    LDUR X21, [SP, #24]
+    LDUR X22, [SP, #32]
+    LDUR X23, [SP, #40]
+    ADDI SP, SP, #64
+    BR LR
+
+    
