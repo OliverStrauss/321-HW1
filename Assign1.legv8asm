@@ -1,5 +1,6 @@
 / assignment1.legv8asm
 / Oliver Strauss (ols756@iastate.edu)
+/ Annelie Erickson (aericks@iastate.edu)
 / CS321 Fall 2025 - Programming Assignment 1
 / Stoopid Sort implementation (fixed/debugged)
 
@@ -34,11 +35,10 @@ main:
     ADDI X2, XZR, #0             // X2 = i = 0
     BL print_loop
 
-    ADD X0, X19, XZR             // base
-    ADDI X1, XZR, #0             // start = 0
-    ADD X2, X20, XZR             // size = n
-    BL find_largest
-    PRNT X0
+    // ADD X0, X19, XZR             // base
+    // ADDI X1, XZR, #0             // start = 0
+    // ADD X2, X20, XZR             // size = n
+    // BL find_largest
 
     // stoopid_sort
     ADD X0, X19, XZR // a
@@ -48,7 +48,8 @@ main:
     // print array after sort
     ADD X0, X19, XZR // base
     ADD X1, X20, XZR  // a
-    ADDI X2, XZR, #0 // i = 0
+    ADD X2, XZR, XZR // i = 0
+    BL print_loop
 
 
 
@@ -238,7 +239,7 @@ fill_loop:
 
     SUB X22, X20, X21          // X22 = n - i
     SUBI X22, X22, #1          // X22 = n - i - 1
-    LSL X23, X22, #3           // offset
+    LSL X23, X22, #3          // offset
     ADD X23, X19, X23          // &a[n - i - 1]
 
     STUR X21, [X23, #0]        // a[n - i - 1] = i
@@ -379,8 +380,8 @@ stoopid_sort:
     ADDI X21, XZR, #0 // X21 = i = 0
 
 ss_loop:
-    // while (i < size - 1)
-    SUB1 X23, X20, #1
+    // while (i < size - i)
+    SUBI X23, X20, #1
     SUBS XZR, X21, X23 // X23 = size - 1
     B.GE ss_done
 
@@ -401,8 +402,8 @@ ss_loop:
     BL swap 
 
     // i++
-    ADD X21, X21, #1
-    BL ss_loop
+    ADDI X21, X21, #1
+    B ss_loop
 
 ss_done:
 LDUR X30, [SP, #0]
