@@ -369,7 +369,7 @@ stoopid_sort:
     SUBI SP, SP, #64
     STUR X30, [SP, #0]
     STUR X19, [SP, #8]
-    STUR X20, [SP #16]
+    STUR X20, [SP, #16]
     STUR X21, [SP, #24]
     STUR X22, [SP, #32]
     STUR X23, [SP, #40]
