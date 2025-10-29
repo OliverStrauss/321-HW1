@@ -295,19 +295,14 @@ max_done:
     ADDI SP, SP, #32
     BR LR
 
+
 //--------------------------------------------------
-// FIND_LARGEST
-// Expects:
-//   X0 = base (int *a)
-//   X1 = start (int)
-//   X2 = size (int)
-// Returns:
-//   X0 = index of largest element (in range start..start+size-1)
+// FIND_LARGEST (with debug prints)
 //--------------------------------------------------
 find_largest:
     SUBI SP, SP, #64
     STUR X30, [SP, #0]
-    STUR X19, [SP, #8]     // preserve locals
+    STUR X19, [SP, #8]
     STUR X20, [SP, #16]
     STUR X21, [SP, #24]
     STUR X22, [SP, #32]
@@ -318,38 +313,47 @@ find_largest:
     SUBS XZR, X2, X27
     B.NE fl_recurse
     ADD X0, X1, XZR
+    // --- Debug print ---
+    PRNT X0          // prints the index returned in base case
     B fl_done
 
 fl_recurse:
     // left_size = size / 2
-    LSR X19, X2, #1               // X19 = size / 2
+    LSR X19, X2, #1          // X19 = size / 2
+    ADD X9, X0, XZR          // base
+    ADD X10, X1, XZR         // start
+    ADD X11, X2, XZR         // size
 
-    // save params into temporaries using ADD (copy)
-    ADD X9, X0, XZR               // X9  = base
-    ADD X10, X1, XZR              // X10 = start
-    ADD X11, X2, XZR              // X11 = size
+    // --- Debug ---
+    // Print entry info: start, size
+    PRNT X10                 // print current start
+    PRNT X11                 // print current size
 
-    // Call find_largest(a, start, left_size)
-    ADD X0, X9, XZR               // base pointer
-    ADD X1, X10, XZR              // start index
-    ADD X2, X19, XZR              // left_size
+    // --- Call left half ---
+    ADD X0, X9, XZR
+    ADD X1, X10, XZR
+    ADD X2, X19, XZR
     BL find_largest
-    ADD X20, X0, XZR              // X20 = leftIndex (copy result)
+    ADD X20, X0, XZR         // leftIndex
+    PRNT X20                 // debug: print leftIndex result
 
-    // Call find_largest(a, start + left_size, (size + 1) / 2)
-    ADD X1, X10, X19              // start + left_size
+    // --- Call right half ---
+    ADD X1, X10, X19         // start + left_size
     ADDI X23, X11, #1
-    LSR X23, X23, #1              // X23 = (size + 1)/2
-    ADD X0, X9, XZR               // restore base
-    ADD X2, X23, XZR              // size = X23
+    LSR X23, X23, #1         // (size+1)/2
+    ADD X0, X9, XZR
+    ADD X2, X23, XZR
     BL find_largest
-    ADD X21, X0, XZR              // X21 = rightIndex
+    ADD X21, X0, XZR         // rightIndex (relative)
+    ADD X21, X21, X10        // make absolute
+    PRNT X21                 // debug: print rightIndex result
 
-    // Call max_index(a, leftIndex, rightIndex)
-    ADD X0, X9, XZR               // restore base again
-    ADD X1, X20, XZR              // left index
-    ADD X2, X21, XZR              // right index
-    BL max_index                  // returns larger index in X0
+    // --- Compare left vs right ---
+    ADD X0, X9, XZR
+    ADD X1, X20, XZR
+    ADD X2, X21, XZR
+    BL max_index
+    PRNT X0                  // debug: print final chosen index
 
 fl_done:
     LDUR X30, [SP, #0]
@@ -360,6 +364,7 @@ fl_done:
     LDUR X23, [SP, #40]
     ADDI SP, SP, #64
     BR LR
+
 
 
 //--------------------------------------------------
@@ -414,5 +419,3 @@ LDUR X30, [SP, #0]
     LDUR X23, [SP, #40]
     ADDI SP, SP, #64
     BR LR
-
-    
