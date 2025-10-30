@@ -4,96 +4,51 @@
 / CS321 Fall 2025 - Programming Assignment 1
 / Stoopid Sort implementation (fixed/debugged)
 
+
+// PLEASE ALLOCATE MORE STACK SPACE WHEN YOU RUN THIS!!!!!! I USED -s 2048
+ADDI SP, XZR, #2000 // initialize stack pointer
 B main
 
 //--------------------------------------------------
 // MAIN
 //--------------------------------------------------
 main:
-    SUBI SP, SP, #192            // reserve stack frame
+    SUBI SP, SP, #112            // reserve stack frame
     STUR X30, [SP, #0]
     STUR X19, [SP, #8]
     STUR X20, [SP, #16]
 
     // Set array base and size
-    ADDI X19, SP, #32            // X19 = &array_region (array base)
+    ADDI X19, SP, #24            // X19 = &array_region (array starts after saved registers)
     ADDI X20, XZR, #10           // X20 = size = 10
 
-    //----------------------------------------
     // Fill array (descending values)
-    //----------------------------------------
     ADD X0, X19, XZR             // X0 = array base
     ADD X1, X20, XZR             // X1 = n
     BL fill
 
-
-    //----------------------------------------
     // Print array before sort
-    //----------------------------------------
     ADD X0, X19, XZR             // X0 = array base
     ADD X1, X20, XZR             // X1 = n
     ADDI X2, XZR, #0             // X2 = i = 0
     BL print_loop
 
-    // ADD X0, X19, XZR             // base
-    // ADDI X1, XZR, #0             // start = 0
-    // ADD X2, X20, XZR             // size = n
-    // BL find_largest
-
     // stoopid_sort
-    ADD X0, X19, XZR // a
-    ADD X1, X20, XZR // size
+    ADD X0, X19, XZR             // a
+    ADD X1, X20, XZR             // size
     BL stoopid_sort
 
     // print array after sort
-    ADD X0, X19, XZR // base
-    ADD X1, X20, XZR  // a
-    ADD X2, XZR, XZR // i = 0
+    ADD X0, X19, XZR             // base
+    ADD X1, X20, XZR             // n
+    ADD X2, XZR, XZR             // i = 0
     BL print_loop
 
-
-
-    //----------------------------------------
-    // Swap for test 
-    //----------------------------------------
-    // ADD X0, X19, XZR             // X0 = array base
-    // ADDI X1, XZR, #0             // X1 = n
-    // ADDI X2, XZR, #5             // X2 = i = 0
-    // BL swap
-
-      //----------------------------------------
-    // Print array before swap
-    //----------------------------------------
-   // ADD X0, X19, XZR             // X0 = array base
-    //ADD X1, X20, XZR             // X1 = n
-  //  ADDI X2, XZR, #0             // X2 = i = 0
-    //BL print_loop
-
-
-  
-
-
-
-
-   // ADD X0, X19, XZR
-   // ADD X1, X20, XZR
-    //BL is_sorted
-  //  PRNT X0                      // prints 0 if sorted, 1 if not
-
-    
-   // ADD X0, X19, XZR             // base
-   // ADDI X1, XZR, #0             // start = 0
-   // ADD X2, X20, XZR             // size = n
-   // BL find_largest
-   // PRNT X0
-
-    //----------------------------------------
     // Restore and HALT
-    //----------------------------------------
     LDUR X30, [SP, #0]
     LDUR X19, [SP, #8]
     LDUR X20, [SP, #16]
-    ADDI SP, SP, #192
+    ADDI SP, SP, #112
     HALT
 
 
@@ -158,7 +113,7 @@ sorted_loop:
     ADD  X5, X0, X5           // X5 = address of a[i - 1]
     LDUR X6, [X5, #0]         // X6 = a[i - 1]
 
-    // If a[i] < a[i-1] -> not sorted (strictly less)
+    // If a[i] < a[i-1] -> not sorted 
     SUBS XZR, X4, X6
     B.LT not_sorted
 
@@ -281,7 +236,7 @@ max_index:
 
     // compare a[i] and a[j]
     SUBS XZR, X9, X10
-    B.LT returnM
+    B.LE returnM
     ADD X0, X1, XZR
     B max_done
 
@@ -297,63 +252,56 @@ max_done:
 
 
 //--------------------------------------------------
-// FIND_LARGEST (with debug prints)
+// FIND_LARGEST
 //--------------------------------------------------
 find_largest:
-    SUBI SP, SP, #64
+    SUBI SP, SP, #80
     STUR X30, [SP, #0]
     STUR X19, [SP, #8]
     STUR X20, [SP, #16]
     STUR X21, [SP, #24]
     STUR X22, [SP, #32]
     STUR X23, [SP, #40]
+    STUR X24, [SP, #48]
+    STUR X25, [SP, #56]
+    STUR X26, [SP, #64]
+    STUR X27, [SP, #72]
 
     ADDI X27, XZR, #1
     // Base case: if size == 1 → return start
     SUBS XZR, X2, X27
     B.NE fl_recurse
     ADD X0, X1, XZR
-    // --- Debug print ---
-    PRNT X0          // prints the index returned in base case
     B fl_done
 
 fl_recurse:
     // left_size = size / 2
     LSR X19, X2, #1          // X19 = size / 2
-    ADD X9, X0, XZR          // base
-    ADD X10, X1, XZR         // start
-    ADD X11, X2, XZR         // size
-
-    // --- Debug ---
-    // Print entry info: start, size
-    PRNT X10                 // print current start
-    PRNT X11                 // print current size
+    ADD X24, X0, XZR         // X24 = base (was X9)
+    ADD X25, X1, XZR         // X25 = start (was X10)
+    ADD X26, X2, XZR         // X26 = size (was X11)
 
     // --- Call left half ---
-    ADD X0, X9, XZR
-    ADD X1, X10, XZR
+    ADD X0, X24, XZR
+    ADD X1, X25, XZR
     ADD X2, X19, XZR
     BL find_largest
     ADD X20, X0, XZR         // leftIndex
-    PRNT X20                 // debug: print leftIndex result
 
     // --- Call right half ---
-    ADD X1, X10, X19         // start + left_size
-    ADDI X23, X11, #1
+    ADD X1, X25, X19         // start + left_size
+    ADDI X23, X26, #1
     LSR X23, X23, #1         // (size+1)/2
-    ADD X0, X9, XZR
+    ADD X0, X24, XZR
     ADD X2, X23, XZR
     BL find_largest
-    ADD X21, X0, XZR         // rightIndex (relative)
-    ADD X21, X21, X10        // make absolute
-    PRNT X21                 // debug: print rightIndex result
+    ADD X21, X0, XZR         // rightIndex
 
     // --- Compare left vs right ---
-    ADD X0, X9, XZR
+    ADD X0, X24, XZR
     ADD X1, X20, XZR
     ADD X2, X21, XZR
     BL max_index
-    PRNT X0                  // debug: print final chosen index
 
 fl_done:
     LDUR X30, [SP, #0]
@@ -362,7 +310,11 @@ fl_done:
     LDUR X21, [SP, #24]
     LDUR X22, [SP, #32]
     LDUR X23, [SP, #40]
-    ADDI SP, SP, #64
+    LDUR X24, [SP, #48]
+    LDUR X25, [SP, #56]
+    LDUR X26, [SP, #64]
+    LDUR X27, [SP, #72]
+    ADDI SP, SP, #80
     BR LR
 
 
@@ -391,7 +343,7 @@ ss_loop:
     B.GE ss_done
 
     // n = find_largest(a, 0, size - 1)
-    SUB X23, X20, X21 // X23 = size - 1
+    SUB X23, X20, X21 // X23 = size - i
     ADD X0, X19, XZR // arg0 = a
     ADDI X1, XZR, #0 // arg1 = 0
     ADD X2, X23, XZR // arg2 = size - 1
